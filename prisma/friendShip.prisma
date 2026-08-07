@@ -1,0 +1,17 @@
+model Friendship {
+  id         String           @id @default(uuid())
+  status     FriendshipStatus @default(PENDING)
+
+  senderId   String
+  sender     User             @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+
+  receiverId String
+  receiver   User             @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  // Prevent duplicate requests between the same two users
+  @@unique([senderId, receiverId])
+}
+
