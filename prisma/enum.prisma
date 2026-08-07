@@ -9,3 +9,10 @@ enum Role {
   ADMIN
   MEMBER
 }
+
+//  Attachment types for messages
+enum AttachmentType {
+  IMAGE
+  VIDEO
+  FILE
+}
