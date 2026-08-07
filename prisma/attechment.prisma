@@ -1,0 +1,11 @@
+model Attachment {
+  id         String         @id @default(uuid())
+  url        String         // AWS S3 / Cloudinary URL
+  type       AttachmentType
+  filename   String         
+
+  messageId  String         
+  message    Message        @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime       @default(now())
+}
