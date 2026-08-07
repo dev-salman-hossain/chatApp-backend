@@ -3,3 +3,9 @@ enum FriendshipStatus {
   ACCEPTED
   REJECTED
 }
+
+// group roles for chat participants
+enum Role {
+  ADMIN
+  MEMBER
+}
