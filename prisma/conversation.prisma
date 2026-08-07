@@ -1,0 +1,12 @@
+model Conversation {
+  id           String        @id @default(uuid())
+  isGroup      Boolean       @default(false)
+  name         String?       // Only required if isGroup is true
+  groupIcon    String?
+
+  participants Participant[]
+  messages     Message[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
