@@ -1,0 +1,15 @@
+model Reaction {
+  id         String   @id @default(uuid())
+  emoji      String   // উদাহরণ: "👍", "❤️", "😂"
+  
+  messageId  String
+  message    Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  // একজন ইউজার একটি মেসেজে একবারই রিঅ্যাক্ট করতে পারবেন
+  @@unique([messageId, userId]) 
+}

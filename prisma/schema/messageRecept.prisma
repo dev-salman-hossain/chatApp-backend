@@ -1,0 +1,15 @@
+// নতুন মডেল: গ্রুপ চ্যাটে কে কে মেসেজ পড়েছে তা ট্র্যাক করার জন্য
+model MessageReceipt {
+  id         String   @id @default(uuid())
+  status     MessageStatus @default(DELIVERED)
+  
+  messageId  String
+  message    Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  updatedAt  DateTime @updatedAt
+
+  @@unique([messageId, userId])
+}

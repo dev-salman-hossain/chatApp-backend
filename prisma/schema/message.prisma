@@ -1,0 +1,28 @@
+model Message {
+  id             String       @id @default(uuid())
+  content        String?      
+
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  attachments    Attachment[]
+  
+  // নতুন: মেসেজ স্ট্যাটাস এবং ডিলিট ফিচার
+  status         MessageStatus @default(SENT)
+  isDeleted      Boolean       @default(false) // "This message was deleted" দেখানোর জন্য
+  
+  // নতুন: মেসেজ রিপ্লাই ফিচার (Self-relation)
+  replyToId      String?
+  replyTo        Message?      @relation("Replies", fields: [replyToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies        Message[]     @relation("Replies")
+
+  // নতুন: রিঅ্যাকশন এবং রিড রিসিপ্ট
+  reactions      Reaction[]
+  receipts       MessageReceipt[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}

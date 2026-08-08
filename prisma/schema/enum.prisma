@@ -16,3 +16,9 @@ enum AttachmentType {
   VIDEO
   FILE
 }
+
+enum MessageStatus {
+  SENT       // সিঙ্গেল টিক
+  DELIVERED  // ডাবল টিক
+  READ       // ব্লু টিক
+}

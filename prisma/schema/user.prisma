@@ -1,0 +1,22 @@
+model User {
+  id               String       @id @default(uuid())
+  email            String       @unique
+  username         String       @unique
+  password         String    
+  avatarUrl        String?
+  
+  // নতুন: অনলাইন স্ট্যাটাস ট্র্যাক করার জন্য
+  isOnline         Boolean      @default(false)
+  lastSeen         DateTime     @default(now())
+  
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  sessions         Session[]
+  sentRequests     Friendship[] @relation("SentRequests")
+  receivedRequests Friendship[] @relation("ReceivedRequests")
+  participants     Participant[]
+  messages         Message[]
+  reactions        Reaction[]
+  receipts         MessageReceipt[]
+}
