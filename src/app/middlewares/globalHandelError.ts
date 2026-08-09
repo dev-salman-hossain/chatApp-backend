@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client'
 import type { NextFunction, Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { ZodError } from 'zod'
-import { env } from '../config/env.js'
+import config from '../config/env.js'
 import AppError from '../shared/errors/AppError.js'
 
 const globalErrorHandler = (err: any, req: Request, res: Response, _next: NextFunction) => {
@@ -143,7 +143,7 @@ const globalErrorHandler = (err: any, req: Request, res: Response, _next: NextFu
     }
   }
 
-  if (env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development') {
     errorResponse.stack = err.stack
     errorResponse.error = err
   }
