@@ -1,0 +1,11 @@
+// src/prisma.ts
+import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import config from "../config/env.js";
+const connectionString = config.databaseUrl || process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
+export default prisma;
+//# sourceMappingURL=prisma.js.map

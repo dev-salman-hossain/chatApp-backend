@@ -6,7 +6,8 @@ model User {
   password         String?   
   avatarUrl        String?
   
-  // অনলাইন স্ট্যাটাস ট্র্যাক করার জন্য
+  // ফোন নম্বর ও অ্যাকাউন্ট ভেরিফিকেশন স্ট্যাটাস
+  isVerified       Boolean      @default(false)
   isOnline         Boolean      @default(false)
   lastSeen         DateTime     @default(now())
   

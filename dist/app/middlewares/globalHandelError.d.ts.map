@@ -1,0 +1,1 @@
+{"version":3,"file":"globalHandelError.d.ts","sourceRoot":"","sources":["../../../src/app/middlewares/globalHandelError.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,YAAY,EAAE,OAAO,EAAE,QAAQ,EAAE,MAAM,SAAS,CAAA;AAM9D,QAAA,MAAM,kBAAkB,QAAS,GAAG,OAAO,OAAO,OAAO,QAAQ,SAAS,YAAY,SAqJrF,CAAA;eAEc,kBAAkB"}
