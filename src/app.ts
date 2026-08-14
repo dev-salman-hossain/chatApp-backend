@@ -17,7 +17,7 @@ app.use(hpp());
 app.use('/api/v1', router);
 
 app.get('/', (_req, res) => {
-    res.send('Server is running');
+    res.send('Chat App Server is running');
 });
 
 export default app;

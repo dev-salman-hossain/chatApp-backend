@@ -1,6 +1,5 @@
 export type IRegisterUser = {
     phoneNumber: string;
-    email?: string;
     username?: string;
     password?: string;
     avatarUrl?: string;
@@ -18,5 +17,14 @@ export type IRefreshTokenResponse = {
 export type ILoginResponse = {
     accessToken: string;
     refreshToken: string;
+};
+
+export type ISendOtp = {
+    phoneNumber: string;
+};
+
+export type IVerifyOtp = {
+    phoneNumber: string;
+    otp: string;
 };
 

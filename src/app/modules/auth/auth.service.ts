@@ -1,12 +1,13 @@
 
 import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import otpGenerator from 'otp-generator';
 import config from '../../config/env.js';
 import { jwtHelpers } from '../../helpers/jwtHelpers.js';
 import { ILoginResponse, ILoginUser, IRegisterUser } from './auth.interface.js';
-
-const prisma = new PrismaClient();
+import prisma from '../../lib/prisma.js';
+import { getFirebaseAuth } from '../../lib/firebaseAdmin.js';
+import AppError from '../../shared/errors/AppError.js';
 
 // Secrets & Expiry (Should come from .env in production)
 const JWT_ACCESS_SECRET = config.jwt_access_token_secret;
@@ -15,29 +16,75 @@ const ACCESS_EXPIRES_IN = '15m';
 const REFRESH_EXPIRES_IN = '7d';
 
 const registerUser = async (payload: IRegisterUser) => {
-  const { password, ...userData } = payload;
-  
+  const { password, username, phoneNumber, ...userData } = payload;
+
+  // 1. Check if phone number is already registered
+  const existingPhone = await prisma.user.findUnique({
+    where: { phoneNumber },
+  });
+  if (existingPhone) {
+    throw new AppError(400, 'User with this phone number already exists');
+  }
+
+  // 2. Fallback username generation or check existing username
+  let finalUsername = username;
+  if (!finalUsername) {
+    finalUsername = `user_${phoneNumber.slice(-6)}_${Math.floor(100 + Math.random() * 900)}`;
+  } else {
+    const existingUsername = await prisma.user.findUnique({
+      where: { username: finalUsername },
+    });
+    if (existingUsername) {
+      throw new AppError(400, 'Username is already taken. Please choose another username.');
+    }
+  }
+
   let hashedPassword: string | undefined;
   if (password) {
     hashedPassword = await bcrypt.hash(password, 12);
   }
-  
-  // Create User but exclude password from response
+
+  // 3. Create User
   const newUser = await prisma.user.create({
     data: {
-      ...userData,
+      phoneNumber,
+      username: finalUsername,
       ...(hashedPassword && { password: hashedPassword }),
+      ...userData,
     },
     select: {
       id: true,
       phoneNumber: true,
-      email: true,
       username: true,
+      isVerified: true,
       createdAt: true,
-    }
+    },
   });
 
-  return newUser;
+  // Auto generate 6-digit numeric OTP for phone verification
+  const otp = otpGenerator.generate(6, {
+    digits: true,
+    lowerCaseAlphabets: false,
+    upperCaseAlphabets: false,
+    specialChars: false,
+  });
+
+  const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes validity
+
+  // Save OTP in DB
+  await prisma.otp.create({
+    data: {
+      phoneNumber: newUser.phoneNumber,
+      otp,
+      expiresAt,
+    },
+  });
+
+  return {
+    user: newUser,
+    message: "User registered successfully. OTP sent for phone verification.",
+    otp, // Useful for testing & development
+  };
 };
 
 const loginUser = async (payload: ILoginUser): Promise<ILoginResponse> => {
@@ -51,13 +98,13 @@ const loginUser = async (payload: ILoginUser): Promise<ILoginResponse> => {
   });
 
   if (!user || !user.password) {
-    throw new Error('User does not exist or invalid credentials');
+    throw new AppError(400, 'User does not exist or invalid credentials');
   }
 
   // Verify password
   const isPasswordMatched = await bcrypt.compare(password!, user.password);
   if (!isPasswordMatched) {
-    throw new Error('Password does not match');
+    throw new AppError(400, 'Password does not match');
   }
 
   // Generate Tokens
@@ -173,11 +220,128 @@ const resetPassword = async (token: string, newPassword: string) => {
   return { message: 'Password reset successful' };
 };
 
+const sendOtp = async (phoneNumber: string) => {
+  // Generate 6-digit numeric OTP using popular 'otp-generator' package
+  const otp = otpGenerator.generate(6, {
+    digits: true,
+    lowerCaseAlphabets: false,
+    upperCaseAlphabets: false,
+    specialChars: false,
+  });
+
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // OTP valid for 5 minutes
+
+  // Save OTP in DB
+  await prisma.otp.create({
+    data: {
+      phoneNumber,
+      otp,
+      expiresAt,
+    },
+  });
+
+  return {
+    message: 'OTP sent successfully',
+    otp, // Useful for testing / response
+    expiresAt,
+  };
+};
+
+const verifyOtp = async (phoneNumber: string, otp: string) => {
+  const otpRecord = await prisma.otp.findFirst({
+    where: {
+      phoneNumber,
+      otp,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!otpRecord) {
+    throw new Error('Invalid or expired OTP');
+  }
+
+  // Update user as verified if user already exists
+  const user = await prisma.user.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (user) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { isVerified: true },
+    });
+  }
+
+  // Delete used OTPs for this phone number
+  await prisma.otp.deleteMany({
+    where: { phoneNumber },
+  });
+
+  return { message: 'Phone number verified successfully' };
+};
+
+const verifyFirebaseToken = async (idToken: string) => {
+  const firebaseAuth = getFirebaseAuth();
+  if (!firebaseAuth) {
+    throw new Error('Firebase Admin SDK credentials not configured in .env');
+  }
+
+  const decodedToken = await firebaseAuth.verifyIdToken(idToken);
+  const phoneNumber = decodedToken.phone_number;
+
+  if (!phoneNumber) {
+    throw new Error('Phone number not found in Firebase token');
+  }
+
+  // Find or create user with verified status
+  let user = await prisma.user.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        phoneNumber,
+        username: `user_${phoneNumber.slice(-6)}_${Math.floor(100 + Math.random() * 900)}`,
+        isVerified: true,
+      },
+    });
+  } else if (!user.isVerified) {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { isVerified: true },
+    });
+  }
+
+  // Generate App Tokens
+  const jwtPayload = { userId: user.id, phoneNumber: user.phoneNumber };
+  const accessToken = jwtHelpers.createToken(jwtPayload, JWT_ACCESS_SECRET, ACCESS_EXPIRES_IN);
+  const refreshToken = jwtHelpers.createToken(jwtPayload, JWT_REFRESH_SECRET, REFRESH_EXPIRES_IN);
+
+  // Save active session
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  await prisma.session.create({
+    data: {
+      userId: user.id,
+      refreshToken,
+      expiresAt,
+    },
+  });
+
+  return { user, accessToken, refreshToken };
+};
+
 export const AuthService = {
   registerUser,
   loginUser,
   refreshToken,
   logoutUser,
+  sendOtp,
+  verifyOtp,
+  verifyFirebaseToken,
   forgotPassword,
   resetPassword,
 };
