@@ -1,7 +1,7 @@
 allowBuilds:
-  '@firebase/util': false
-  '@prisma/engines': false
-  bcrypt: false
-  esbuild: false
-  prisma: false
-  protobufjs: false
+  '@firebase/util': true
+  '@prisma/engines': true
+  bcrypt: true
+  esbuild: true
+  prisma: true
+  protobufjs: true
