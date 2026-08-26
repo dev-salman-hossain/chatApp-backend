@@ -14,7 +14,7 @@ app.use(helmet());
 app.use(hpp());
 app.use('/api/v1', router);
 app.get('/', (_req, res) => {
-    res.send('Chat App Server is running');
+    res.status(200).json({ success: true, message: 'Chat App Server is running', status: 'success' });
 });
 export default app;
 //# sourceMappingURL=app.js.map
