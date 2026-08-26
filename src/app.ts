@@ -1,4 +1,4 @@
-import express, { Application } from 'express';
+import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import expressRateLimit from 'express-rate-limit';
@@ -16,8 +16,8 @@ app.use(hpp());
 
 app.use('/api/v1', router);
 
-app.get('/', (_req, res) => {
-    res.send('Chat App Server is running');
+app.get('/', (_req:Request, res:Response) => {
+    res.status(200).json({success: true, message: 'Chat App Server is running', status: 'success'});
 });
 
 export default app;
