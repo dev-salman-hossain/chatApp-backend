@@ -6,3 +6,5 @@ node_modules
 
 folder.md
 auth.md
+
+pnpm-workspace.yaml
